@@ -1,6 +1,12 @@
 # Accelerometer-Gyroscope-App
 Mobile web app to access and measure accelerometer and gyroscope readings from Inertial Measurement Units (IMUs) in phones / tablets
 
+### Frontend: React.js
+React router is used to route from HomePage → InstructionPage → CountdownPage → MeasurePage
+
+### Backend: Node.js + Express API
+REST API enables for POSTing of accelerometer and gyroscope readings to a PostgreSQL database
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
