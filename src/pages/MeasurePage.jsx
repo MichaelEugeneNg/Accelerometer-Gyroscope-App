@@ -7,7 +7,12 @@ export default function MeasurePage() {
     const dataRef = useRef({ accel: [], gyro: [] }); // create buffers that persist across renders
     const [remaining, setRemaining] = useState(10);
     const [isFinished, setFinished] = useState(false);
-
+ 
+    const API_BASE = 
+        window.location.hostname === 'localhost' // Ensure the right API is "hit"
+        ? 'http://localhost:4000'           
+        : 'http://192.168.249.241:4000';    // CHANGE THIS TO YOUR LAN IP
+  
     // ======================= IMU MEASUREMENT FUNCTION =======================
     useEffect(() => {
         let motionHandler;
@@ -29,10 +34,12 @@ export default function MeasurePage() {
             }
 
             // DeviceMotionEvent listener
+            const startTS = Date.now(); // start time
             motionHandler = (e) => {
-                const ts = Date.now();
+                const ts = (Date.now() - startTS) / 1000; // relative to start time
                 const { x, y, z } = e.accelerationIncludingGravity;
-                const { alpha = 0, beta = 0, gamma = 0 } = e.rotationRate || {};
+                // const { alpha = 0, beta = 0, gamma = 0 } = e.rotationRate || {};
+                const {alpha, beta, gamma } = e.rotationRate
                 dataRef.current.accel.push({ ts, x, y, z });
                 dataRef.current.gyro.push({ ts, alpha, beta, gamma });
             };
@@ -40,30 +47,30 @@ export default function MeasurePage() {
             // By listening to 'devicemotion', the parameter "e" in motionHandler is a DeviceMotionEvent
             window.addEventListener('devicemotion', motionHandler);
             
-            // Fallback: Generic Sensor API (if supported)
+            // Fallback: Use generic Sensor API (if supported)
             if (window.Accelerometer) {
                 try {
-                accelSensor = new window.Accelerometer({ frequency: 60 });
-                accelSensor.addEventListener('reading', () => {
-                    const ts = Date.now();
-                    dataRef.current.accel.push({ ts, x: accelSensor.x, y: accelSensor.y, z: accelSensor.z });
-                });
-                accelSensor.start();
+                    accelSensor = new window.Accelerometer({ frequency: 60 });
+                    accelSensor.addEventListener('reading', () => {
+                        const ts = (Date.now() - startTS) / 1000; // relative to start time
+                        dataRef.current.accel.push({ ts, x: accelSensor.x, y: accelSensor.y, z: accelSensor.z });
+                    });
+                    accelSensor.start();
                 } catch (e) {
-                console.warn('Accelerometer not available:', e);
+                    console.warn('Accelerometer not available:', e);
                 }
             }
 
             if (window.Gyroscope) {
                 try {
-                gyroSensor = new window.Gyroscope({ frequency: 60 });
-                gyroSensor.addEventListener('reading', () => {
-                    const ts = Date.now();
+                    gyroSensor = new window.Gyroscope({ frequency: 60 });
+                    gyroSensor.addEventListener('reading', () => {
+                    const ts = (Date.now() - startTS) / 1000; // relative to start time
                     dataRef.current.gyro.push({ ts, alpha: gyroSensor.x, beta: gyroSensor.y, gamma: gyroSensor.z });
-                });
-                gyroSensor.start();
+                    });
+                    gyroSensor.start();
                 } catch (e) {
-                console.warn('Gyroscope not available:', e);
+                    console.warn('Gyroscope not available:', e);
                 }
             }
         }
@@ -72,37 +79,36 @@ export default function MeasurePage() {
 
         // Countdown interval of 1 second
         const interval = setInterval(() => {
-        setRemaining((r) => r - 1);
+            setRemaining((r) => r - 1);
         }, 1000);
 
         // Stop after 10 seconds
         const timeout = setTimeout(() => {
-        window.removeEventListener('devicemotion', motionHandler);
-        clearInterval(interval);
-        setFinished(true);
-        console.log('Captured IMU data:', dataRef.current);
+            window.removeEventListener('devicemotion', motionHandler);
+            clearInterval(interval);
+            setFinished(true);
+            console.log('Captured IMU data:', dataRef.current);
         }, 10000);
 
         // Cleanup if unmounted early
         return () => {
-        clearInterval(interval);
-        clearTimeout(timeout);
-        window.removeEventListener('devicemotion', motionHandler);
+            clearInterval(interval);
+            clearTimeout(timeout);
+            window.removeEventListener('devicemotion', motionHandler);
         };
     }, [navigate]);
 
     // ======================= Only when isFinished is True, send accel & gyro to backend =======================
     useEffect(() => {
         if (!isFinished) return;
-
+        
         const sendMeasurements = async () => {
             const userId = '123e4567-e89b-12d3-a456-426614174000'; // TODO: currently hardcoded. Change this dynamically later
-            // use the timestamp of the first accel reading (or `new Date().toISOString()`)
-            const measuredAt = new Date(dataRef.current.accel[0].ts).toISOString();
+            const measuredAt = new Date(dataRef.current.accel[0].ts).toISOString(); // use the timestamp of the first accel reading
 
             try {
                 // send accel data
-                await fetch('http://localhost:4000/api/measurements', {
+                const res1 = await fetch(`${API_BASE}/api/measurements`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -112,9 +118,13 @@ export default function MeasurePage() {
                         data: dataRef.current.accel,
                     }),
                 });
-                
+                if (!res1.ok) {
+                    throw new Error(`Accel upload failed: ${res1.status} ${await res1.text()}`);
+                }
+                console.log('Posted accel to database!')
+
                 // send gyro data
-                await fetch('http://localhost:4000/api/measurements', {
+                const res2 = await fetch(`${API_BASE}/api/measurements`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -124,15 +134,18 @@ export default function MeasurePage() {
                         data: dataRef.current.gyro,
                     }),
                 });
+                if (!res2.ok) {
+                    throw new Error(`Gyro upload failed: ${res2.status} ${await res2.text()}`);
+                }
+                console.log('Posted gyro to database!')
 
-                console.log('Posted to database!')
             } catch (err) {
                 console.error('Upload failed', err);
             }
         };
 
         sendMeasurements();
-    }, [isFinished]);
+    }, [isFinished, API_BASE]);
 
     // ======================= Plotting function to build plotData =======================
     const startTimeStamp = dataRef.current.accel[0]?.ts || Date.now(); // start time
@@ -193,7 +206,7 @@ export default function MeasurePage() {
         );
     }
 
-    // ======================= Render live countdown =======================
+    // ======================= Render live countdown only if it has not been posted to database =======================
     return (
         <div
         style={{
