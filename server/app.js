@@ -7,7 +7,9 @@ const app = express()
 app.use(cors({ origin: 
     [
         'http://localhost:3000',      // by default, React runs on localhost 3000 but express runs on localhost 4000
-        'http://192.168.249.241:3000' // michael's hotspot
+        'http://192.168.249.241:3000', // michael's hotspot from floor 4 (werqwise)
+        'http://192.168.143.241:3000', // michael's hotspot from floor 6 (werqwise)
+        // TODO: include your IP address here
     ] 
  })) 
 

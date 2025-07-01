@@ -13,7 +13,7 @@ export default function InstructionPage() {
       <h2>Hold your phone in your right hand<br/>
           with the screen facing upwards</h2>
 
-      <p><em>(TODO: Descriptive image goes here)</em></p>
+      <p><em>([DEV] TODO: Descriptive image goes here)</em></p>
 
       <button
         onClick={() => navigate('/countdown')}

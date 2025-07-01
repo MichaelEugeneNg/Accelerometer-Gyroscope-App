@@ -11,7 +11,7 @@ export default function MeasurePage() {
     const API_BASE = 
         window.location.hostname === 'localhost' // Ensure the right API is "hit"
         ? 'http://localhost:4000'           
-        : 'http://192.168.249.241:4000';    // CHANGE THIS TO YOUR LAN IP
+        : 'http://192.168.143.241:4000';    // TODO: CHANGE THIS TO YOUR LAN IP
   
     // ======================= IMU MEASUREMENT FUNCTION =======================
     useEffect(() => {
@@ -103,7 +103,7 @@ export default function MeasurePage() {
         if (!isFinished) return;
         
         const sendMeasurements = async () => {
-            const userId = '123e4567-e89b-12d3-a456-426614174000'; // TODO: currently hardcoded. Change this dynamically later
+            const userId = '123e4567-e89b-12d3-a456-426614174000'; // [DEV] TODO: currently hardcoded. Change this dynamically later
             const measuredAt = new Date(dataRef.current.accel[0].ts).toISOString(); // use the timestamp of the first accel reading
 
             try {
