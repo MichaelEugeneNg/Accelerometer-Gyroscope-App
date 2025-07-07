@@ -7,11 +7,12 @@ export default function MeasurePage() {
     const dataRef = useRef({ accel: [], gyro: [] }); // create buffers that persist across renders
     const [remaining, setRemaining] = useState(10);
     const [isFinished, setFinished] = useState(false);
- 
-    const API_BASE = 
-        window.location.hostname === 'localhost' // Ensure the right API is "hit"
-        ? 'http://localhost:4000'           
-        : 'http://192.168.143.241:4000';    // TODO: CHANGE THIS TO YOUR LAN IP
+    const [error, setError] = useState(null);
+    const [successMsg, setSuccessMsg] = useState(null);
+    
+    // Dynamically set the API_BASE
+    const { protocol, hostname } = window.location;
+    const API_BASE = `${protocol}//${hostname}:8000`; // For express, use 4000. FastAPI uses 8000
   
     // ======================= IMU MEASUREMENT FUNCTION =======================
     useEffect(() => {
@@ -101,50 +102,32 @@ export default function MeasurePage() {
     // ======================= Only when isFinished is True, send accel & gyro to backend =======================
     useEffect(() => {
         if (!isFinished) return;
-        
-        const sendMeasurements = async () => {
-            const userId = '123e4567-e89b-12d3-a456-426614174000'; // [DEV] TODO: currently hardcoded. Change this dynamically later
-            const measuredAt = new Date(dataRef.current.accel[0].ts).toISOString(); // use the timestamp of the first accel reading
-
+    
+        const sendMeasurementsFastAPI = async (sensorType, data) => {
             try {
-                // send accel data
-                const res1 = await fetch(`${API_BASE}/api/measurements`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId,
-                        measuredAt,
-                        sensor: 'accel',
-                        data: dataRef.current.accel,
-                    }),
+                const resp = await fetch(`${API_BASE}/api/measurements/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: '123e4567-e89b-12d3-a456-426614174000', // [DEV] TODO: currently hardcoded. Change this dynamically later
+                    measuredAt: new Date().toISOString(), 
+                    sensor_type: sensorType,
+                    data,
+                }),
                 });
-                if (!res1.ok) {
-                    throw new Error(`Accel upload failed: ${res1.status} ${await res1.text()}`);
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error(`${resp.status}: ${text}`);
                 }
-                console.log('Posted accel to database!')
-
-                // send gyro data
-                const res2 = await fetch(`${API_BASE}/api/measurements`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId,
-                        measuredAt,
-                        sensor: 'gyro',
-                        data: dataRef.current.gyro,
-                    }),
-                });
-                if (!res2.ok) {
-                    throw new Error(`Gyro upload failed: ${res2.status} ${await res2.text()}`);
-                }
-                console.log('Posted gyro to database!')
-
+                console.log(`${sensorType} uploaded`);
+                setSuccessMsg(prev => `${prev || ''}${sensorType} uploaded successfully!\n`);
             } catch (err) {
-                console.error('Upload failed', err);
+                console.error(`${sensorType} upload failed`, err);
+                setError(`${sensorType} upload failed: ${err.message}`);
             }
         };
-
-        sendMeasurements();
+        sendMeasurementsFastAPI('accel', dataRef.current.accel);
+        sendMeasurementsFastAPI('gyro', dataRef.current.gyro);
     }, [isFinished, API_BASE]);
 
     // ======================= Plotting function to build plotData =======================
@@ -168,29 +151,32 @@ export default function MeasurePage() {
         return (
             <div style={{ padding: 20 }}>
                 <h2>Measurement complete!</h2>
+                    {error && <div style={{ color: 'crimson' }}>{error}</div>}
+                    {successMsg && <pre style={{ whiteSpace: 'pre-wrap' }}>{successMsg}</pre>}
+
                     {/* PLOT */}
                     <h3>Acceleration</h3>
                     <LineChart width={600} height={300} data={plotData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="ts" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="ax" name="X" dot={false} />
-                    <Line type="monotone" dataKey="ay" name="Y" dot={false} />
-                    <Line type="monotone" dataKey="az" name="Z" dot={false} />
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="ts" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="ax" name="X" dot={false} />
+                        <Line type="monotone" dataKey="ay" name="Y" dot={false} />
+                        <Line type="monotone" dataKey="az" name="Z" dot={false} />
                     </LineChart>
 
                     <h3>Gyroscope</h3>
                     <LineChart width={600} height={300} data={plotData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="ts" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="gx" name="α" dot={false} />
-                    <Line type="monotone" dataKey="gy" name="β" dot={false} />
-                    <Line type="monotone" dataKey="gz" name="γ" dot={false} />
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="ts" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="gx" name="α" dot={false} />
+                        <Line type="monotone" dataKey="gy" name="β" dot={false} />
+                        <Line type="monotone" dataKey="gz" name="γ" dot={false} />
                     </LineChart>
                 
                 <button onClick={() => navigate('/')} style={{ marginLeft: 10 }}>
