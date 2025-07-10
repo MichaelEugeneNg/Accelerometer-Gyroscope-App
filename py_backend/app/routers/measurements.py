@@ -14,7 +14,7 @@ router = APIRouter()
 #     finally:
 #         db.close()
 
-# POST method
+# POST method at api/measurements endpoint
 @router.post("/", status_code=201)
 def post_measurement(
     m_in: schemas.MeasurementIn, 
@@ -23,7 +23,7 @@ def post_measurement(
     crud.create_measurements(db, m_in)
     return {"success": True}
 
-# GET method
+# GET method at api/measurements endpoint
 @router.get("/", response_model=List[schemas.MeasurementOut], summary="Fetch 8 most recent measurements",)
 def read_recent_measurements(db: Session = Depends(get_db)):
     measurements = (
@@ -36,3 +36,14 @@ def read_recent_measurements(db: Session = Depends(get_db)):
         # Return an empty list rather than a 404
         return []
     return measurements
+
+# GET method at api/measurements/metrics endpoint
+@router.get("/metrics", response_model=List[schemas.MeasurementMetrics], summary="Fetch sensor_type & metrics for 8 most recent measurements",)
+def read_recent_metrics(db: Session = Depends(get_db)):
+    rows = (
+        db.query(models.Measurement)
+          .order_by(models.Measurement.id.desc())
+          .limit(8)
+          .all()
+    )
+    return rows

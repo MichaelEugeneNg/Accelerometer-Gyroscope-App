@@ -40,7 +40,7 @@ export default function MeasurePage() {
                 const ts = (Date.now() - startTS) / 1000; // relative to start time
                 const { x, y, z } = e.accelerationIncludingGravity;
                 // const { alpha = 0, beta = 0, gamma = 0 } = e.rotationRate || {};
-                const {alpha, beta, gamma } = e.rotationRate
+                const { alpha, beta, gamma } = e.rotationRate
                 dataRef.current.accel.push({ ts, x, y, z });
                 dataRef.current.gyro.push({ ts, alpha, beta, gamma });
             };
@@ -162,9 +162,9 @@ export default function MeasurePage() {
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="ax" name="X" dot={false} />
-                        <Line type="monotone" dataKey="ay" name="Y" dot={false} />
-                        <Line type="monotone" dataKey="az" name="Z" dot={false} />
+                        <Line type="monotone" dataKey="ax" name="X" dot={false} stroke="#ff0000"/> {/*red*/}
+                        <Line type="monotone" dataKey="ay" name="Y" dot={false} stroke="#00cc00"/> {/*green*/}
+                        <Line type="monotone" dataKey="az" name="Z" dot={false} stroke="#0000ff"/>{/*blue*/}
                     </LineChart>
 
                     <h3>Gyroscope</h3>
@@ -174,9 +174,9 @@ export default function MeasurePage() {
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="gx" name="α" dot={false} />
-                        <Line type="monotone" dataKey="gy" name="β" dot={false} />
-                        <Line type="monotone" dataKey="gz" name="γ" dot={false} />
+                        <Line type="monotone" dataKey="gx" name="α" dot={false} stroke="#ff0000"/> {/*red*/}
+                        <Line type="monotone" dataKey="gy" name="β" dot={false} stroke="#00cc00"/> {/*green*/}
+                        <Line type="monotone" dataKey="gz" name="γ" dot={false} stroke="#0000ff"/>{/*blue*/}
                     </LineChart>
                 
                 <button onClick={() => navigate('/')} style={{ marginLeft: 10 }}>

@@ -9,6 +9,8 @@ def create_measurements(db: Session, m_in: schemas.MeasurementIn) -> models.Meas
     std = utils.compute_stddev(m_in.data)
     max_delta = utils.compute_max_rate_of_change(m_in.data)
     range = utils.compute_range(m_in.data)
+    jerk = utils.compute_max_jerk(m_in.data)
+    cadence = utils.compute_motion_cadence(m_in.data)
     # ====================================================
 
     # Send in biomarkers as a JSON to 'metrics'
@@ -22,7 +24,9 @@ def create_measurements(db: Session, m_in: schemas.MeasurementIn) -> models.Meas
         metrics = { 
             "stddev": std,
             "max_rate_of_change": max_delta,
-            "range": range
+            "range": range,
+            "jerk": jerk,
+            "cadence": cadence
         } 
         # =====================================================
     )

@@ -13,7 +13,6 @@ class MeasurementIn(BaseModel):
     measuredAt: datetime
     sensor_type: str           # e.g. "accel" or "gyro"
     data: Any                  # raw IMU buffer, as JSON
-    # metrics: Optional[Dict[str, Any]] = None  # e.g. {"stddev": [...]}. This has been commented out because metrics are calculated in the server side, not client side
 
     model_config = {
         "from_attributes": True
@@ -24,8 +23,18 @@ class MeasurementOut(BaseModel):
     user_id: UUID
     measured_at: datetime
     sensor_type: str
-    data: Any                  # will round-trip the JSON
-    metrics: Optional[Any]     # JSON metrics
+    data: Any
+    metrics: Optional[Any]
+
+    model_config = {
+        "from_attributes": True
+    }
+
+# This is used for the GET method at the "api/measurements/metrics" endpoint
+class MeasurementMetrics(BaseModel):
+    id: int
+    sensor_type: str
+    metrics: Any
 
     model_config = {
         "from_attributes": True
