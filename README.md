@@ -1,11 +1,19 @@
 # Accelerometer-Gyroscope-App
-Mobile web app to access and measure accelerometer and gyroscope readings from Inertial Measurement Units (IMUs) in phones / tablets
+Mobile web app to access and measure accelerometer and gyroscope readings from Inertial Measurement Units (IMUs) in phones / tablets. 
 
 ### Frontend: React.js
 React router is used to route from HomePage → InstructionPage → CountdownPage → MeasurePage
+MeasurePage sends two async fetches to a FastAPI, sending a payload with the following fields:
 
-### Backend: Node.js + Express API
-REST API enables for POSTing of accelerometer and gyroscope readings to a PostgreSQL database
+1. ```user_id```: UUID
+2. ```measured_at```: the time that the data was measured
+3. ```sensor_type```: "accel" or "gyro"
+4. ```data```: an array of dictionaries ordered by timestamp\
+a) accel looks like [{"ts": _, "x": _, "y": _, "z": _}, ..., {"ts": _, "x": _, "y": _, "z": _}]\
+b) gyro looks like [{"ts": _, "alpha": _, "beta": _, "gamma": _}, ..., {"ts": _, "alpha": _, "beta": _, "gamma": _}]
+
+### Backend: FastAPI
+The backend is implemented in Python FastAPI, and follows a REST API framework which enable POST / GET behavior of accelerometer and gyroscope readings to / from a PostgreSQL database. Python functions in ```utils.py``` are used in ```crud.py``` to create an additional column, "metrics", which contains relevant information about the data stream being sent from the frontend. The final information being posted to the database includes the "metrics" field in addition to the fields from the frontend.
 
 # Getting Started with Create React App
 
